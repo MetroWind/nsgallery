@@ -12,12 +12,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cxxopts)
 
-set(OATPP_BUILD_TESTS FALSE)
+# FetchContent_Declare(
+#   oatpp
+#   GIT_REPOSITORY https://github.com/oatpp/oatpp.git
+# )
+# set(OATPP_BUILD_TESTS FALSE)
+# FetchContent_MakeAvailable(oatpp)
+
 FetchContent_Declare(
-  oatpp
-  GIT_REPOSITORY https://github.com/oatpp/oatpp.git
+  httplib
+  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+  GIT_TAG v0.14.3
 )
-FetchContent_MakeAvailable(oatpp)
+FetchContent_MakeAvailable(httplib)
 
 FetchContent_Declare(
   ryml
@@ -46,6 +53,17 @@ set(BUILD_BENCHMARK FALSE)
 FetchContent_MakeAvailable(inja)
 unset(BUILD_BENCHMARK)
 
+add_definitions( -DMAGICKCORE_QUANTUM_DEPTH=16 )
+add_definitions( -DMAGICKCORE_HDRI_ENABLE=0 )
+find_package(ImageMagick COMPONENTS Magick++ REQUIRED)
+
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG v1.12.0
+)
+FetchContent_MakeAvailable(spdlog)
+
 set(SOURCE_FILES src/test.cpp)
 add_executable(gallery ${SOURCE_FILES})
 set_property(TARGET gallery PROPERTY CXX_EXTENSIONS FALSE)
@@ -56,6 +74,13 @@ set_property(TARGET gallery PROPERTY COMPILE_WARNING_AS_ERROR TRUE)
 target_include_directories(gallery PRIVATE
   ${cxxopts_SOURCE_DIR}/include
   ${inja_SOURCE_DIR}/single_include/inja
+  ${ImageMagick_INCLUDE_DIRS}
 )
 
-target_link_libraries(gallery PRIVATE cxxopts oatpp ryml::ryml)
+target_link_libraries(gallery PRIVATE
+  cxxopts
+  httplib
+  spdlog
+  ryml::ryml
+  ${ImageMagick_LIBRARIES}
+)
