@@ -19,6 +19,7 @@ public:
     enum ItemStatus { SHOW, HIDE, EXCLUDE };
 
     static AlbumConfig fromYamlOrDefault(const std::filesystem::path& file);
+    static std::string statusToStr(ItemStatus);
     ItemStatus getItmeStatus(const std::string& file_base_name);
 private:
     AlbumConfig() = default;
@@ -45,7 +46,13 @@ public:
     // Find an image by ID.
     std::optional<ImageFile> image(std::string_view id) const;
 
+    AlbumConfig::ItemStatus imageStatus(std::string_view id) const;
+    AlbumConfig::ItemStatus albumStatus(std::string_view id) const;
+
 private:
+    bool shouldExcludeImageFromParent(std::string_view id) const;
+    bool shouldExcludeAlbumFromParent(std::string_view id) const;
+
     const Configuration& config;
     const std::filesystem::path dir;
 };

@@ -68,6 +68,12 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
 
 void App::handlePhoto(const std::string& id, httplib::Response& res)
 {
+    if(!image_source.image(id).has_value())
+    {
+        res.status = httplib::StatusCode::BadRequest_400;
+        res.set_content("Image not found.", "text/plain");
+        return;
+    }
     nlohmann::json fe_data;
     fe_data["id"] = id;
     fe_data["metadata"] = nlohmann::json::value_t::object;
