@@ -5,9 +5,16 @@
   </head>
   <body>
     <h1>Swapping Songs</h1>
+    <ul>
+      {% for a in albums %}
+      <li><a href="{{ url_for_album(a) }}">{{ a }}</a></li>
+      {% endfor %}
+    </ul>
     <div>
       {% for img in images %}
-      <img src="/repr/{{ img.id }}-thumb.avif" />
+      <a href="{{ url_for_photo(img.id) }}">
+        <img src="{{ url_for_repr(img.id, "thumb") }}" />
+      </a>
       {% endfor %}
     </div>
   </body>
