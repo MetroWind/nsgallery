@@ -26,6 +26,11 @@ AlbumConfig AlbumConfig::fromYamlOrDefault(const fs::path& file)
 
     ryml::Tree tree = ryml::parse_in_place(ryml::to_substr(*buffer));
     AlbumConfig config;
+    if(tree["cover"].has_key())
+    {
+        auto value = tree["cover"].val();
+        config.cover = std::string(value.begin(), value.end());
+    }
     if(tree["hides"].has_key())
     {
         for(const auto& item: tree["hides"])
@@ -70,87 +75,101 @@ std::string AlbumConfig::statusToStr(ItemStatus s)
 AlbumConfig::ItemStatus
 AlbumConfig::getItmeStatus(const std::string& file_base_name)
 {
-    spdlog::debug("Getting status of {}...", file_base_name);
-    spdlog::debug("Excludes {}, hides {}, includes {}.", excludes.size(), hides.size(), includes.size());
     if(excludes.empty())
     {
         if(includes.empty() || includes.contains(file_base_name))
         {
             if(hides.contains(file_base_name))
             {
-                spdlog::debug("aaa");
                 return AlbumConfig::HIDE;
             }
             else
             {
-                spdlog::debug("bbb");
                 return AlbumConfig::SHOW;
             }
         }
         else
         {
-            spdlog::debug("ccc");
             return AlbumConfig::EXCLUDE;
         }
     }
     else if(excludes.contains(file_base_name))
     {
-        spdlog::debug("ddd");
         return AlbumConfig::EXCLUDE;
     }
     else if(hides.contains(file_base_name))
     {
-        spdlog::debug("eee");
         return AlbumConfig::HIDE;
     }
     else
     {
-        spdlog::debug("fff");
         return AlbumConfig::SHOW;
     }
 }
 
-E<std::vector<ImageFile>> ImageSource::images(std::string_view album) const
+E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
 {
-    std::vector<ImageFile> result;
-    spdlog::debug("Listing {}...", (dir / album).string());
     auto album_path = dir / album;
     AlbumConfig::ItemStatus album_status = albumStatus(album);
     if(album_status == AlbumConfig::EXCLUDE)
     {
         return std::unexpected("Not found.");
     }
-    for(const fs::directory_entry& entry: fs::directory_iterator(album_path))
+
+    std::vector<fs::path> paths;
+    image_list_lock.lock_shared();
+    auto cache_hit = image_list_cache.find(album);
+    if(cache_hit != image_list_cache.end())
     {
-        if(!(entry.is_regular_file() || entry.is_symlink()))
+        spdlog::debug("Cache hit for {}.", album);
+        paths = cache_hit->second;
+        image_list_lock.unlock_shared();
+    }
+    else
+    {
+        spdlog::debug("Cache miss for {}.", album);
+        image_list_lock.unlock_shared();
+        image_list_lock.lock();
+        spdlog::debug("Locked for writing.", album);
+        for(const fs::directory_entry& entry: fs::directory_iterator(album_path))
         {
-            continue;
-        }
-        const auto& path = entry.path();
-        const std::string base_name = path.filename().string();
-        if(base_name.starts_with("."))
-        {
-            continue;
-        }
-        std::string ext = path.extension().string();
-        // Convert file extension to lower case. WARNING: This
-        // assumes ASCII extension names!
-        std::transform(ext.begin(), ext.end(), ext.begin(),
-                       [](unsigned char c){ return std::tolower(c); });
-        if(ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".tif"
-           || ext == ".tiff" || ext == ".webp" || ext == ".avif")
-        {
-            auto id = (fs::path(album) / fs::path(base_name).stem()).string();
-            switch(imageStatus(id))
+            if(!(entry.is_regular_file() || entry.is_symlink()))
             {
-            case AlbumConfig::EXCLUDE:
-            case AlbumConfig::HIDE:
                 continue;
-            case AlbumConfig::SHOW:
-                break;
             }
-            result.emplace_back(dir, id, path, config);
+            const auto& path = entry.path();
+            const std::string base_name = path.filename().string();
+            if(base_name.starts_with("."))
+            {
+                continue;
+            }
+            std::string ext = asciiLower(path.extension().string());
+            if(ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".tif"
+               || ext == ".tiff" || ext == ".webp" || ext == ".avif")
+            {
+                auto id = (fs::path(album) / fs::path(base_name).stem()).string();
+                switch(imageStatus(id))
+                {
+                case AlbumConfig::EXCLUDE:
+                case AlbumConfig::HIDE:
+                    continue;
+                case AlbumConfig::SHOW:
+                    break;
+                }
+                paths.push_back(fs::path(album) / base_name);
+                spdlog::debug("{} contains {}.", album, paths.back().string());
+            }
         }
+        image_list_cache[album] = paths;
+        spdlog::debug("Cached added for {}.", album);
+        image_list_lock.unlock();
+    }
+
+    std::vector<ImageFile> result;
+    for(auto& path: std::move(paths))
+    {
+        result.emplace_back(dir, (album / path.stem()).string(),
+                            dir / path, config);
     }
     return result;
 }
@@ -159,7 +178,6 @@ E<std::vector<std::string>> ImageSource::albums(std::string_view album) const
 {
     std::vector<std::string> result;
     auto album_path = dir / album;
-    spdlog::debug("Listing {}...", album_path.string());
     if(shouldExcludeAlbumFromParent(album))
     {
         return std::unexpected("Not found");
@@ -191,8 +209,9 @@ E<std::vector<std::string>> ImageSource::albums(std::string_view album) const
     return result;
 }
 
-std::optional<ImageFile> ImageSource::image(std::string_view id) const
+std::optional<ImageFile> ImageSource::image(std::string_view id)
 {
+    spdlog::debug("Getting image with ID {}...", id);
     auto album_path = fs::path(id).parent_path();
     auto imgs = images(album_path.string());
     if(!imgs.has_value())
@@ -210,26 +229,21 @@ std::optional<ImageFile> ImageSource::image(std::string_view id) const
 
 AlbumConfig::ItemStatus ImageSource::imageStatus(std::string_view id) const
 {
-    spdlog::debug("Finding image status of {}...", id);
     fs::path path = dir / id;
-    spdlog::debug("Album config is at {}.", (path.parent_path() / ALBUM_CONFIG_FILE).string());
     AlbumConfig conf = AlbumConfig::fromYamlOrDefault(
         path.parent_path() / ALBUM_CONFIG_FILE);
     AlbumConfig::ItemStatus status =
         conf.getItmeStatus(path.filename().string());
     if(status == AlbumConfig::EXCLUDE)
     {
-        spdlog::debug("{} is excluded.", id);
         return status;
     }
     if(shouldExcludeImageFromParent(id))
     {
-        spdlog::debug("{} is excluded from parent.", id);
         return AlbumConfig::EXCLUDE;
     }
     else
     {
-        spdlog::debug("{} is {}.", id, AlbumConfig::statusToStr(status));
         return status;
     }
 }
@@ -257,6 +271,18 @@ AlbumConfig::ItemStatus ImageSource::albumStatus(std::string_view id) const
     {
         return status;
     }
+}
+
+std::vector<IDWithName> ImageSource::navChain(std::string_view id) const
+{
+    if(id.empty())
+    {
+        return {};
+    }
+    auto path = fs::path(id);
+    auto chain = navChain(path.parent_path().string());
+    chain.emplace_back(std::string(id), path.filename().string());
+    return chain;
 }
 
 bool ImageSource::shouldExcludeImageFromParent(std::string_view id) const
@@ -301,4 +327,23 @@ bool ImageSource::shouldExcludeAlbumFromParent(std::string_view id) const
     {
         return shouldExcludeAlbumFromParent(parent_id.string());
     }
+}
+
+std::optional<std::string>
+ImageSource::albumCover(const std::string& album_id)
+{
+    auto album_conf = AlbumConfig::fromYamlOrDefault(
+        dir / album_id / ALBUM_CONFIG_FILE);
+    if(album_conf.getCover().has_value())
+    {
+        return (fs::path(album_id) / (*album_conf.getCover())).string();
+    }
+
+    auto imgs = images(album_id);
+    if(!imgs.has_value() || imgs->empty())
+    {
+        return std::nullopt;
+    }
+
+    return (*imgs)[0].id;
 }

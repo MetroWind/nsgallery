@@ -8,24 +8,45 @@
 #include "app.hpp"
 #include "image.hpp"
 
+nlohmann::json navChainToJson(std::vector<IDWithName>&& chain)
+{
+    nlohmann::json result = nlohmann::json::value_t::array;
+    for(IDWithName& seg: chain)
+    {
+        result.push_back(
+            {{ "id", std::move(seg.id)}, {"name", std::move(seg.name)}});
+    }
+    return result;
+}
+
 App::App(const Configuration& conf)
         : config(conf), templates(conf.template_dir), image_source(conf)
 {
-    templates.add_callback("url_for_album", 1, [&](const inja::Arguments& args) {
+    templates.add_callback("url_for_album", 1, [&](const inja::Arguments& args)
+    {
         return urlForAlbum(args.at(0)->get_ref<const std::string&>(), config);
     });
 
-    templates.add_callback("url_for_photo", 1, [&](const inja::Arguments& args) {
+    templates.add_callback("url_for_photo", 1, [&](const inja::Arguments& args)
+    {
         return urlForPhoto(args.at(0)->get_ref<const std::string&>(), config);
     });
 
-    templates.add_callback("url_for_repr", 2, [&](const inja::Arguments& args) {
-        auto repr = Representation::fromStr(args.at(1)->get_ref<const std::string&>());
+    templates.add_callback("url_for_repr", 2, [&](const inja::Arguments& args)
+    {
+        auto repr = Representation::fromStr(
+            args.at(1)->get_ref<const std::string&>());
         if(!repr.has_value())
         {
             return std::string();
         }
-        return urlForRepr(args.at(0)->get_ref<const std::string&>(), *repr, config);
+        return urlForRepr(args.at(0)->get_ref<const std::string&>(), *repr,
+                          config);
+    });
+
+    templates.add_callback("url_for_static", 1, [&](const inja::Arguments& args)
+    {
+        return urlForStatic(args.at(0)->get_ref<const std::string&>(), config);
     });
 }
 
@@ -39,6 +60,7 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
     nlohmann::json fe_data;
     fe_data["images"] = nlohmann::json::value_t::array;
     fe_data["albums"] = nlohmann::json::value_t::array;
+    fe_data["thumb_size"] = config.thumb_size;
     auto albums = image_source.albums(id);
     if(!albums.has_value())
     {
@@ -48,7 +70,21 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
     }
     for(const std::string& album: *albums)
     {
-        fe_data["albums"].push_back(album);
+        auto cover = image_source.albumCover(album);
+        if(cover.has_value())
+        {
+            fe_data["albums"].push_back(
+                {{"id", album},
+                 {"cover", *cover},
+                 {"cover_type", "image"}});
+        }
+        else
+        {
+            fe_data["albums"].push_back(
+                {{"id", album},
+                 {"cover", "default-cover.svg"},
+                 {"cover_type", "static"}});
+        }
     }
     auto images = image_source.images(id);
     if(!images.has_value())
@@ -61,6 +97,7 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
     {
         fe_data["images"].push_back(img.json());
     }
+    fe_data["navigation"] = navChainToJson(image_source.navChain(id));
     std::string result = templates.render_file(
         "index.html", std::move(fe_data));
     res.set_content(result, "text/html");
@@ -77,12 +114,13 @@ void App::handlePhoto(const std::string& id, httplib::Response& res)
     nlohmann::json fe_data;
     fe_data["id"] = id;
     fe_data["metadata"] = nlohmann::json::value_t::object;
+    fe_data["navigation"] = navChainToJson(image_source.navChain(id));
     std::string result = templates.render_file(
         "photo.html", std::move(fe_data));
     res.set_content(result, "text/html");
 }
 
-void App::handleRepresentation(const std::string& path, httplib::Response& res) const
+void App::handleRepresentation(const std::string& path, httplib::Response& res)
 {
     std::regex p("(.*)-(thumb|present).avif");
     std::smatch match;
@@ -136,6 +174,13 @@ void App::handleRepresentation(const std::string& path, httplib::Response& res) 
 void App::start()
 {
     httplib::Server server;
+    // server.new_task_queue = [] { return new httplib::ThreadPool(1); };
+    auto ret = server.set_mount_point("/static", config.static_dir);
+    if (!ret)
+    {
+        spdlog::error("Failed to mount static");
+    }
+
     server.Get("/", [&](const httplib::Request& _, httplib::Response& res)
     {
         handleIndex(res);

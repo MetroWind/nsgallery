@@ -1,9 +1,47 @@
 #include <expected>
+#include <optional>
+#include <utility>
+
 #include <ryml.hpp>
 #include <ryml_std.hpp>
 
 #include "config.hpp"
 #include "utils.hpp"
+
+std::optional<ImageFormat::Value> ImageFormat::fromStr(std::string s)
+{
+    std::string ss = asciiLower(std::move(s));
+    if(ss == "jpeg")
+    {
+        return JPEG;
+    }
+    else if(ss == "webp")
+    {
+        return WEBP;
+    }
+    else if(ss == "avif")
+    {
+        return AVIF;
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
+
+std::string ImageFormat::toExt(ImageFormat::Value v)
+{
+    switch(v)
+    {
+    case JPEG:
+        return "jpg";
+    case WEBP:
+        return "webp";
+    case AVIF:
+        return "avif";
+    }
+    std::unreachable();
+}
 
 E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
 {
@@ -39,6 +77,16 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
             return std::unexpected("Invalid thumb quality");
         }
     }
+    if(tree["thumb-format"].has_key())
+    {
+        auto value = tree["thumb-format"].val();
+        std::string s(value.begin(), value.end());
+        auto f = ImageFormat::fromStr(std::move(s));
+        if(f.has_value())
+        {
+            config.thumb_format = *f;
+        }
+    }
     if(tree["present-size"].has_key())
     {
         if(!getYamlValue(tree["present-size"], config.present_size))
@@ -53,7 +101,16 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
             return std::unexpected("Invalid present quality");
         }
     }
-
+    if(tree["present-format"].has_key())
+    {
+        auto value = tree["present-format"].val();
+        std::string s(value.begin(), value.end());
+        auto f = ImageFormat::fromStr(std::move(s));
+        if(f.has_value())
+        {
+            config.present_format = *f;
+        }
+    }
     return std::expected<Configuration, std::string>
         {std::in_place, std::move(config)};
 }

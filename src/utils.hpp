@@ -37,3 +37,11 @@ inline E<std::vector<char>> readFile(const std::filesystem::path& path)
 
     return content;
 }
+
+// Convert a string to lower case, assuming ASCII.
+inline std::string asciiLower(std::string s)
+{
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+}

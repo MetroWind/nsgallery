@@ -12,6 +12,8 @@ int main(int argc, char** argv)
     const Configuration config {
         .photo_root_dir = "/mnt/stuff/Pictures",
         .template_dir = "../templates/",
+        .static_dir = "../statics",
+        .thumb_format = ImageFormat::WEBP,
     };
     App app(config);
     app.start();

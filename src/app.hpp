@@ -40,6 +40,12 @@ inline std::string urlForRepr(const std::string& id,
     }
 }
 
+inline std::string urlForStatic(const std::string& path,
+                                const Configuration& config)
+{
+    return std::string("/static/") + path;
+}
+
 class App
 {
 public:
@@ -49,8 +55,7 @@ public:
     void handleIndex(httplib::Response& res) const;
     void handleAlbum(const std::string& id, httplib::Response& res);
     void handlePhoto(const std::string& id, httplib::Response& res);
-    void handleRepresentation(const std::string& path, httplib::Response& res)
-        const;
+    void handleRepresentation(const std::string& path, httplib::Response& res);
     void start();
 
 private:
