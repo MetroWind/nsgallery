@@ -1,0 +1,8 @@
+<nav>{% for seg in navigation %}
+  {% if loop.is_last %}
+  / {{ seg.name }}
+  {% else %}
+  / <a href="{{ url_for_album(seg.id) }}">{{ seg.name }}</a>
+  {% endif %}
+  {% endfor %}
+</nav>
