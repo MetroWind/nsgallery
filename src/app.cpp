@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "app.hpp"
+#include "config.hpp"
 #include "image.hpp"
 
 nlohmann::json navChainToJson(std::vector<IDWithName>&& chain)
@@ -122,7 +123,9 @@ void App::handlePhoto(const std::string& id, httplib::Response& res)
 
 void App::handleRepresentation(const std::string& path, httplib::Response& res)
 {
-    std::regex p("(.*)-(thumb|present).avif");
+    std::regex p(std::format(R"((.*)-(thumb\.{}|present\.{}))",
+                             ImageFormat::toExt(config.thumb_format),
+                             ImageFormat::toExt(config.present_format)));
     std::smatch match;
     if(!std::regex_match(path, match, p))
     {
@@ -133,8 +136,16 @@ void App::handleRepresentation(const std::string& path, httplib::Response& res)
 
     const std::string& id = match[1];
     const std::string& repr_str = match[2];
-    auto repr = Representation::fromStr(repr_str);
-    if(!repr.has_value())
+    Representation::Type repr;
+    if(repr_str.starts_with("thumb."))
+    {
+        repr = Representation::THUMB;
+    }
+    else if(repr_str.starts_with("present."))
+    {
+        repr = Representation::PRESENT;
+    }
+    else
     {
         res.status = httplib::StatusCode::BadRequest_400;
         res.set_content("Unknown representation.", "text/plain");
@@ -149,19 +160,23 @@ void App::handleRepresentation(const std::string& path, httplib::Response& res)
         return;
     }
     E<std::vector<char>> content;
-    switch(*repr)
+    std::string content_type;
+    switch(repr)
     {
     case Representation::THUMB:
         content = readFile(img->getThumb());
+        content_type = ImageFormat::contentType(config.thumb_format);
         break;
     case Representation::PRESENT:
         content = readFile(img->getPresent());
+        content_type = ImageFormat::contentType(config.present_format);
         break;
     }
 
     if(content.has_value())
     {
-        res.set_content(content->data(), content->size(), "image/avif");
+        res.set_content(content->data(), content->size(),
+                        std::move(content_type));
     }
     else
     {

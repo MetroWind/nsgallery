@@ -13,6 +13,7 @@ public:
     ImageFormat() = delete;
     static std::optional<Value> fromStr(std::string s);
     static std::string toExt(Value v);
+    static std::string contentType(Value v);
 };
 
 class Configuration

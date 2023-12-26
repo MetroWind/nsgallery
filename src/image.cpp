@@ -5,6 +5,7 @@
 #include <Magick++.h>
 #include <spdlog/spdlog.h>
 
+#include "config.hpp"
 #include "utils.hpp"
 #include "image.hpp"
 
@@ -38,7 +39,8 @@ std::filesystem::path ImageFile::getThumb() const
     fs::path data_dir = base_dir / fs::path(id).parent_path() /
         RUNTIME_DATA_DIR;
     fs::path thumb_file =
-        data_dir / std::format("{}-thumb.avif", base_name.string());
+        data_dir / std::format("{}-thumb.{}", base_name.string(),
+                               ImageFormat::toExt(config.thumb_format));
     if(!fs::exists(thumb_file))
     {
         if(!fs::exists(data_dir))
@@ -58,7 +60,8 @@ std::filesystem::path ImageFile::getPresent() const
     fs::path data_dir = base_dir / fs::path(id).parent_path() /
         RUNTIME_DATA_DIR;
     fs::path present_file =
-        data_dir / std::format("{}-present.avif", base_name.string());
+        data_dir / std::format("{}-present.{}", base_name.string(),
+                               ImageFormat::toExt(config.present_format));
     if(!fs::exists(present_file))
     {
         if(!fs::exists(data_dir))

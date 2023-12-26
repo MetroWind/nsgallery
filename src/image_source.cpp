@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <exception>
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -107,30 +108,36 @@ AlbumConfig::getItmeStatus(const std::string& file_base_name)
     }
 }
 
-E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
+const std::vector<std::filesystem::path>*
+ItemListCache::get(const std::string& key)
 {
-    auto album_path = dir / album;
-    AlbumConfig::ItemStatus album_status = albumStatus(album);
-    if(album_status == AlbumConfig::EXCLUDE)
     {
-        return std::unexpected("Not found.");
+        std::shared_lock<std::shared_mutex>(lock);
+        auto found = cache.find(key);
+        if(found != std::end(cache) && detectStale(key) == CacheStatus::FRESH)
+        {
+            spdlog::debug("Cache hit on {}.", key);
+            return &found->second;
+        }
     }
+    spdlog::debug("Cache miss on {}.", key);
+    std::unique_lock<std::shared_mutex>(lock);
+    cache[key] = refresh(key);
+    return &cache[key];
+}
 
-    std::vector<fs::path> paths;
-    image_list_lock.lock_shared();
-    auto cache_hit = image_list_cache.find(album);
-    if(cache_hit != image_list_cache.end())
+ImageSource::ImageSource(const Configuration& conf)
+        : config(conf), dir(conf.photo_root_dir)
+{
+    auto stale = [](const std::string& id)
     {
-        spdlog::debug("Cache hit for {}.", album);
-        paths = cache_hit->second;
-        image_list_lock.unlock_shared();
-    }
-    else
+        return CacheStatus::FRESH;
+    };
+
+    photo_list_cache.setGetFresh([&](const std::string& album_id)
     {
-        spdlog::debug("Cache miss for {}.", album);
-        image_list_lock.unlock_shared();
-        image_list_lock.lock();
-        spdlog::debug("Locked for writing.", album);
+        std::vector<fs::path> paths;
+        auto album_path = dir / album_id;
         for(const fs::directory_entry& entry: fs::directory_iterator(album_path))
         {
             if(!(entry.is_regular_file() || entry.is_symlink()))
@@ -147,7 +154,7 @@ E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
             if(ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".tif"
                || ext == ".tiff" || ext == ".webp" || ext == ".avif")
             {
-                auto id = (fs::path(album) / fs::path(base_name).stem()).string();
+                auto id = (fs::path(album_id) / fs::path(base_name).stem()).string();
                 switch(imageStatus(id))
                 {
                 case AlbumConfig::EXCLUDE:
@@ -156,17 +163,60 @@ E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
                 case AlbumConfig::SHOW:
                     break;
                 }
-                paths.push_back(fs::path(album) / base_name);
-                spdlog::debug("{} contains {}.", album, paths.back().string());
+                paths.push_back(fs::path(album_id) / base_name);
+                spdlog::debug("{} contains {}.", album_id, paths.back().string());
             }
         }
-        image_list_cache[album] = paths;
-        spdlog::debug("Cached added for {}.", album);
-        image_list_lock.unlock();
+        return paths;
+    });
+
+    album_list_cache.setGetFresh([&](const std::string& album_id)
+    {
+        std::vector<fs::path> result;
+        auto album_path = dir / album_id;
+        for(const fs::directory_entry& entry: fs::directory_iterator(album_path))
+        {
+            if(!(entry.is_directory() || entry.is_symlink()))
+            {
+                continue;
+            }
+            const auto& path = entry.path();
+            std::string base_name = path.filename().string();
+            std::string id = (fs::path(album_id) / base_name).string();
+            if(std::move(base_name).starts_with("."))
+            {
+                continue;
+            }
+            switch(albumStatus(id))
+            {
+            case AlbumConfig::EXCLUDE:
+            case AlbumConfig::HIDE:
+                continue;
+            case AlbumConfig::SHOW:
+                break;
+            }
+
+            result.push_back(std::move(id));
+        }
+        return result;
+    });
+
+    photo_list_cache.setDetectStale(stale);
+    album_list_cache.setDetectStale(stale);
+}
+
+E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
+{
+    auto album_path = dir / album;
+    AlbumConfig::ItemStatus album_status = albumStatus(album);
+    if(album_status == AlbumConfig::EXCLUDE)
+    {
+        return std::unexpected("Not found.");
     }
 
+    const std::vector<fs::path>& paths = *photo_list_cache.get(album);
     std::vector<ImageFile> result;
-    for(auto& path: std::move(paths))
+    for(auto& path: paths)
     {
         result.emplace_back(dir, (album / path.stem()).string(),
                             dir / path, config);
@@ -174,38 +224,18 @@ E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
     return result;
 }
 
-E<std::vector<std::string>> ImageSource::albums(std::string_view album) const
+E<std::vector<std::string>> ImageSource::albums(const std::string& album)
 {
-    std::vector<std::string> result;
-    auto album_path = dir / album;
     if(shouldExcludeAlbumFromParent(album))
     {
         return std::unexpected("Not found");
     }
-    for(const fs::directory_entry& entry: fs::directory_iterator(dir / album))
-    {
-        if(!(entry.is_directory() || entry.is_symlink()))
-        {
-            continue;
-        }
-        const auto& path = entry.path();
-        std::string base_name = path.filename().string();
-        std::string id = (fs::path(album) / base_name).string();
-        if(std::move(base_name).starts_with("."))
-        {
-            continue;
-        }
-        switch(albumStatus(id))
-        {
-        case AlbumConfig::EXCLUDE:
-        case AlbumConfig::HIDE:
-            continue;
-        case AlbumConfig::SHOW:
-            break;
-        }
 
-        result.push_back(std::move(id));
-    }
+    const auto* paths = album_list_cache.get(album);
+    std::vector<std::string> result;
+    result.reserve(paths->size());
+    std::transform(std::begin(*paths), std::end(*paths), std::back_inserter(result),
+                   [](const fs::path& p) { return p.string(); });
     return result;
 }
 

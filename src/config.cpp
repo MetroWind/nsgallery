@@ -43,6 +43,20 @@ std::string ImageFormat::toExt(ImageFormat::Value v)
     std::unreachable();
 }
 
+std::string ImageFormat::contentType(Value v)
+{
+    switch(v)
+    {
+    case JPEG:
+        return "image/jpeg";
+    case WEBP:
+        return "image/webp";
+    case AVIF:
+        return "image/avif";
+    }
+    std::unreachable();
+}
+
 E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
 {
     auto buffer = readFile(path);

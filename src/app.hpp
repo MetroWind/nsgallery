@@ -32,9 +32,11 @@ inline std::string urlForRepr(const std::string& id,
     switch(repr)
     {
     case Representation::THUMB:
-        return std::format("/repr/{}-thumb.avif", id);
+        return std::format(
+            "/repr/{}-thumb.{}", id, ImageFormat::toExt(config.thumb_format));
     case Representation::PRESENT:
-        return std::format("/repr/{}-present.avif", id);
+        return std::format("/repr/{}-present.{}", id,
+                           ImageFormat::toExt(config.present_format));
     default:
         return {};
     }
