@@ -1,17 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
+    {% include "head.html" %}
     <title>Gallery</title>
-    <link rel="preconnect" href="https://rsms.me/">
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-    <link rel="stylesheet" href="{{ url_for_static("style.css") }}" />
   </head>
   <body>
-    <nav>{% for seg in navigation %}
-      / {{ seg.name }}
-      {% endfor %}
-    </nav>
+    {% include "nav.html" %}
     <h1>Gallery</h1>
     <div id="AlbumContent">
       <section id="Albums">

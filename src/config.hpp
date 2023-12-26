@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <optional>
+
+#include <stdint.h>
 
 #include "utils.hpp"
 

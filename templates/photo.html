@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Swapping Songs</title>
+    {% include "head.html" %}
+    <title>Gallery</title>
   </head>
   <body>
-    <h1>Swapping Songs</h1>
-    <div>
+    {% include "nav.html" %}
+    <h1>Photo</h1>
+    <div id="PhotoContent">
       <figure>
         <img src="{{ url_for_repr(id, "present") }}" />
-        <figcaption>An elephant at sunset</figcaption>
+        <div id="Metadata">
+          <h2>A Photo</h2>
+        </div>
       </figure>
     </div>
   </body>
