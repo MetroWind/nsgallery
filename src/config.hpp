@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <optional>
 
 #include <stdint.h>
@@ -13,8 +14,8 @@ public:
     enum Value {JPEG, WEBP, AVIF};
     ImageFormat() = delete;
     static std::optional<Value> fromStr(std::string s);
-    static std::string toExt(Value v);
-    static std::string contentType(Value v);
+    static std::string_view toExt(Value v);
+    static std::string_view contentType(Value v);
 };
 
 class Configuration

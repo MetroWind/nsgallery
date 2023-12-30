@@ -10,17 +10,16 @@
 
 #include "utils.hpp"
 #include "config.hpp"
-#include "image.hpp"
 #include "image_source.hpp"
 
 inline std::string urlForAlbum(const std::string& id,
-                               const Configuration& config)
+                               [[maybe_unused]] const Configuration& config)
 {
     return std::string("/a/") + id;
 }
 
 inline std::string urlForPhoto(const std::string& id,
-                               const Configuration& config)
+                               [[maybe_unused]] const Configuration& config)
 {
     return std::string("/p/") + id;
 }
@@ -43,7 +42,7 @@ inline std::string urlForRepr(const std::string& id,
 }
 
 inline std::string urlForStatic(const std::string& path,
-                                const Configuration& config)
+                                [[maybe_unused]] const Configuration& config)
 {
     return std::string("/static/") + path;
 }

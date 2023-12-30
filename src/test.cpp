@@ -4,7 +4,7 @@
 #include "app.hpp"
 #include "config.hpp"
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, char** argv)
 {
     Magick::InitializeMagick(*argv);
     spdlog::set_level(spdlog::level::debug);

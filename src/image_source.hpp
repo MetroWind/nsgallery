@@ -1,7 +1,9 @@
 #pragma once
+#include <functional>
 #include <string_view>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include <string_view>
 #include <optional>
 #include <filesystem>
@@ -11,6 +13,7 @@
 #include "config.hpp"
 #include "image.hpp"
 #include "utils.hpp"
+#include "representation.hpp"
 
 constexpr std::string_view ALBUM_CONFIG_FILE = ".nsgallery-config.yaml";
 
@@ -39,6 +42,12 @@ struct IDWithName
     std::string name;
 };
 
+using IDWithPath = std::unordered_map<std::string, std::filesystem::path>;
+using IDWithPathRef = std::reference_wrapper<const IDWithPath>;
+
+std::vector<std::reference_wrapper<const std::string>>
+orderedIDsFromIDWithPath(const IDWithPath& map);
+
 enum class CacheStatus { STALE, FRESH };
 
 class ItemListCache
@@ -50,8 +59,8 @@ public:
     ItemListCache& operator=(const ItemListCache&) = delete;
     ItemListCache& operator=(ItemListCache&&) = default;
 
-    const std::vector<std::filesystem::path>* get(const std::string& key);
-    void setGetFresh(std::function<std::vector<std::filesystem::path>(const std::string&)> func)
+    const IDWithPath& get(const std::string& key);
+    void setGetFresh(std::function<IDWithPath(const std::string&)> func)
     {
         refresh = func;
     }
@@ -61,9 +70,9 @@ public:
     }
 
 private:
-    std::unordered_map<std::string, std::vector<std::filesystem::path>> cache;
+    std::unordered_map<std::string, IDWithPath> cache;
     std::shared_mutex lock;
-    std::function<std::vector<std::filesystem::path>(const std::string&)> refresh;
+    std::function<IDWithPath(const std::string&)> refresh;
     std::function<CacheStatus(const std::string&)> detectStale;
 };
 
@@ -74,12 +83,15 @@ public:
     explicit ImageSource(const Configuration& conf);
 
     // Return a collection of image IDs.
-    E<std::vector<ImageFile>> images(const std::string& album);
+    E<IDWithPathRef> images(const std::string& album);
     // Return a collection of sub-album IDs.
-    E<std::vector<std::string>> albums(const std::string& album);
+    E<IDWithPathRef> albums(const std::string& album);
 
     // Find an image by ID.
-    std::optional<ImageFile> image(std::string_view id);
+    std::optional<std::filesystem::path> image(const std::string& id);
+
+    E<std::filesystem::path> getThumb(const std::string& id);
+    E<std::filesystem::path> getPresent(const std::string& id);
 
     AlbumConfig::ItemStatus imageStatus(std::string_view id) const;
     AlbumConfig::ItemStatus albumStatus(std::string_view id) const;
@@ -102,4 +114,7 @@ private:
 
     ItemListCache photo_list_cache;
     ItemListCache album_list_cache;
+
+    ReprManager thumb_manager;
+    ReprManager present_manager;
 };

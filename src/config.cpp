@@ -1,6 +1,7 @@
 #include <expected>
 #include <optional>
 #include <utility>
+#include <string_view>
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
@@ -29,7 +30,7 @@ std::optional<ImageFormat::Value> ImageFormat::fromStr(std::string s)
     }
 }
 
-std::string ImageFormat::toExt(ImageFormat::Value v)
+std::string_view ImageFormat::toExt(ImageFormat::Value v)
 {
     switch(v)
     {
@@ -43,7 +44,7 @@ std::string ImageFormat::toExt(ImageFormat::Value v)
     std::unreachable();
 }
 
-std::string ImageFormat::contentType(Value v)
+std::string_view ImageFormat::contentType(Value v)
 {
     switch(v)
     {

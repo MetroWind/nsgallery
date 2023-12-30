@@ -8,6 +8,7 @@
 #include "app.hpp"
 #include "config.hpp"
 #include "image.hpp"
+#include "image_source.hpp"
 
 nlohmann::json navChainToJson(std::vector<IDWithName>&& chain)
 {
@@ -62,14 +63,15 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
     fe_data["images"] = nlohmann::json::value_t::array;
     fe_data["albums"] = nlohmann::json::value_t::array;
     fe_data["thumb_size"] = config.thumb_size;
-    auto albums = image_source.albums(id);
+    const auto albums = image_source.albums(id);
     if(!albums.has_value())
     {
         res.status = httplib::StatusCode::NotFound_404;
         res.set_content("Not found.", "text/plain");
         return;
     }
-    for(const std::string& album: *albums)
+
+    for(const std::string& album: orderedIDsFromIDWithPath(*albums))
     {
         auto cover = image_source.albumCover(album);
         if(cover.has_value())
@@ -94,9 +96,9 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
         res.set_content("Not found.", "text/plain");
         return;
     }
-    for(const ImageFile& img: *images)
+    for(const std::string& img: orderedIDsFromIDWithPath(*images))
     {
-        fe_data["images"].push_back(img.json());
+        fe_data["images"].push_back({{ "id", img }});
     }
     fe_data["navigation"] = navChainToJson(image_source.navChain(id));
     std::string result = templates.render_file(
@@ -152,25 +154,36 @@ void App::handleRepresentation(const std::string& path, httplib::Response& res)
         return;
     }
 
-    const std::optional<ImageFile> img = image_source.image(id);
-    if(!img.has_value())
-    {
-        res.status = httplib::StatusCode::BadRequest_400;
-        res.set_content("Image not found.", "text/plain");
-        return;
-    }
     E<std::vector<char>> content;
     std::string content_type;
     switch(repr)
     {
     case Representation::THUMB:
-        content = readFile(img->getThumb());
+    {
+        auto thumb = image_source.getThumb(id);
+        if(!thumb.has_value())
+        {
+            res.status = httplib::StatusCode::InternalServerError_500;
+            res.set_content("Failed to get thumbnail.", "text/plain");
+            return;
+        }
+        content = readFile(*thumb);
         content_type = ImageFormat::contentType(config.thumb_format);
         break;
+    }
     case Representation::PRESENT:
-        content = readFile(img->getPresent());
+    {
+        auto present = image_source.getPresent(id);
+        if(!present.has_value())
+        {
+            res.status = httplib::StatusCode::InternalServerError_500;
+            res.set_content("Failed to get presentation.", "text/plain");
+            return;
+        }
+        content = readFile(*present);
         content_type = ImageFormat::contentType(config.present_format);
         break;
+    }
     }
 
     if(content.has_value())
@@ -196,7 +209,8 @@ void App::start()
         spdlog::error("Failed to mount static");
     }
 
-    server.Get("/", [&](const httplib::Request& _, httplib::Response& res)
+    server.Get("/", [&]([[maybe_unused]] const httplib::Request& req,
+                        httplib::Response& res)
     {
         handleIndex(res);
     });

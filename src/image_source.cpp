@@ -11,7 +11,6 @@
 #include <spdlog/spdlog.h>
 
 #include "config.hpp"
-#include "image.hpp"
 #include "image_source.hpp"
 #include "utils.hpp"
 
@@ -108,43 +107,61 @@ AlbumConfig::getItmeStatus(const std::string& file_base_name)
     }
 }
 
-const std::vector<std::filesystem::path>*
-ItemListCache::get(const std::string& key)
+const IDWithPath& ItemListCache::get(const std::string& key)
 {
     {
-        std::shared_lock<std::shared_mutex>(lock);
+        std::shared_lock<std::shared_mutex> l(lock);
         auto found = cache.find(key);
         if(found != std::end(cache) && detectStale(key) == CacheStatus::FRESH)
         {
             spdlog::debug("Cache hit on {}.", key);
-            return &found->second;
+            return found->second;
         }
     }
     spdlog::debug("Cache miss on {}.", key);
-    std::unique_lock<std::shared_mutex>(lock);
+    std::unique_lock<std::shared_mutex> l(lock);
     cache[key] = refresh(key);
-    return &cache[key];
+    return cache[key];
+}
+
+std::vector<std::reference_wrapper<const std::string>>
+orderedIDsFromIDWithPath(const IDWithPath& map)
+{
+    std::vector<std::reference_wrapper<const std::string>> ids;
+    ids.reserve(map.size());
+    for(const auto& id_path: map)
+    {
+        ids.emplace_back(id_path.first);
+    }
+    std::sort(std::begin(ids), std::end(ids), [](auto ref1, auto ref2)
+    {
+        return ref1.get() < ref2.get();
+    });
+    return ids;
 }
 
 ImageSource::ImageSource(const Configuration& conf)
-        : config(conf), dir(conf.photo_root_dir)
+        : config(conf), dir(conf.photo_root_dir),
+          thumb_manager(Representation::THUMB, conf),
+          present_manager(Representation::PRESENT, conf)
 {
-    auto stale = [](const std::string& id)
+    auto stale = []([[maybe_unused]] const std::string& id)
     {
         return CacheStatus::FRESH;
     };
 
     photo_list_cache.setGetFresh([&](const std::string& album_id)
     {
-        std::vector<fs::path> paths;
+        IDWithPath paths;
         auto album_path = dir / album_id;
-        for(const fs::directory_entry& entry: fs::directory_iterator(album_path))
+        for(const fs::directory_entry& entry:
+                fs::directory_iterator(album_path))
         {
             if(!(entry.is_regular_file() || entry.is_symlink()))
             {
                 continue;
             }
-            const auto& path = entry.path();
+            auto& path = entry.path();
             const std::string base_name = path.filename().string();
             if(base_name.starts_with("."))
             {
@@ -154,7 +171,8 @@ ImageSource::ImageSource(const Configuration& conf)
             if(ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".tif"
                || ext == ".tiff" || ext == ".webp" || ext == ".avif")
             {
-                auto id = (fs::path(album_id) / fs::path(base_name).stem()).string();
+                auto id = (fs::path(album_id) / fs::path(base_name).stem())
+                    .string();
                 switch(imageStatus(id))
                 {
                 case AlbumConfig::EXCLUDE:
@@ -163,8 +181,8 @@ ImageSource::ImageSource(const Configuration& conf)
                 case AlbumConfig::SHOW:
                     break;
                 }
-                paths.push_back(fs::path(album_id) / base_name);
-                spdlog::debug("{} contains {}.", album_id, paths.back().string());
+                paths.emplace(id, std::move(path));
+                spdlog::debug("{} contains {}.", album_id, std::move(id));
             }
         }
         return paths;
@@ -172,15 +190,16 @@ ImageSource::ImageSource(const Configuration& conf)
 
     album_list_cache.setGetFresh([&](const std::string& album_id)
     {
-        std::vector<fs::path> result;
+        IDWithPath result;
         auto album_path = dir / album_id;
-        for(const fs::directory_entry& entry: fs::directory_iterator(album_path))
+        for(const fs::directory_entry& entry:
+                fs::directory_iterator(album_path))
         {
             if(!(entry.is_directory() || entry.is_symlink()))
             {
                 continue;
             }
-            const auto& path = entry.path();
+            auto& path = entry.path();
             std::string base_name = path.filename().string();
             std::string id = (fs::path(album_id) / base_name).string();
             if(std::move(base_name).starts_with("."))
@@ -196,7 +215,7 @@ ImageSource::ImageSource(const Configuration& conf)
                 break;
             }
 
-            result.push_back(std::move(id));
+            result.emplace(std::move(id), std::move(path));
         }
         return result;
     });
@@ -205,7 +224,7 @@ ImageSource::ImageSource(const Configuration& conf)
     album_list_cache.setDetectStale(stale);
 }
 
-E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
+E<IDWithPathRef> ImageSource::images(const std::string& album)
 {
     auto album_path = dir / album;
     AlbumConfig::ItemStatus album_status = albumStatus(album);
@@ -214,32 +233,20 @@ E<std::vector<ImageFile>> ImageSource::images(const std::string& album)
         return std::unexpected("Not found.");
     }
 
-    const std::vector<fs::path>& paths = *photo_list_cache.get(album);
-    std::vector<ImageFile> result;
-    for(auto& path: paths)
-    {
-        result.emplace_back(dir, (album / path.stem()).string(),
-                            dir / path, config);
-    }
-    return result;
+    return photo_list_cache.get(album);
 }
 
-E<std::vector<std::string>> ImageSource::albums(const std::string& album)
+E<IDWithPathRef> ImageSource::albums(const std::string& album)
 {
     if(shouldExcludeAlbumFromParent(album))
     {
         return std::unexpected("Not found");
     }
 
-    const auto* paths = album_list_cache.get(album);
-    std::vector<std::string> result;
-    result.reserve(paths->size());
-    std::transform(std::begin(*paths), std::end(*paths), std::back_inserter(result),
-                   [](const fs::path& p) { return p.string(); });
-    return result;
+    return album_list_cache.get(album);
 }
 
-std::optional<ImageFile> ImageSource::image(std::string_view id)
+std::optional<fs::path> ImageSource::image(const std::string& id)
 {
     spdlog::debug("Getting image with ID {}...", id);
     auto album_path = fs::path(id).parent_path();
@@ -248,13 +255,38 @@ std::optional<ImageFile> ImageSource::image(std::string_view id)
     {
         return std::nullopt;
     }
-    auto found = std::find_if(std::begin(*imgs), std::end(*imgs),
-                              [id](const auto& img) { return img.id == id; });
-    if(found == std::end(*imgs))
+    auto found = imgs->get().find(id);
+    if(found == imgs->get().end())
     {
         return std::nullopt;
     }
-    return *found;
+    return found->second;
+}
+
+E<std::filesystem::path> ImageSource::getThumb(const std::string& id)
+{
+    auto path = image(id);
+    if(path.has_value())
+    {
+        return thumb_manager.get(*path);
+    }
+    else
+    {
+        return std::unexpected("Photo not found");
+    }
+}
+
+E<std::filesystem::path> ImageSource::getPresent(const std::string& id)
+{
+    auto path = image(id);
+    if(path.has_value())
+    {
+        return present_manager.get(*path);
+    }
+    else
+    {
+        return std::unexpected("Photo not found");
+    }
 }
 
 AlbumConfig::ItemStatus ImageSource::imageStatus(std::string_view id) const
@@ -370,10 +402,11 @@ ImageSource::albumCover(const std::string& album_id)
     }
 
     auto imgs = images(album_id);
-    if(!imgs.has_value() || imgs->empty())
+    if(!imgs.has_value() || imgs->get().empty())
     {
         return std::nullopt;
     }
 
-    return (*imgs)[0].id;
+    return std::min_element(std::begin(imgs->get()), std::end(imgs->get()))
+        ->first;
 }
