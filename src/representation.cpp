@@ -74,8 +74,8 @@ E<void> ReprManager::refresh(const fs::path& path)
     }
     std::string path_str = path.string();
     spdlog::debug("Generating presentation for {}...", path_str);
-    int quality;
-    uint32_t size;
+    int quality = 0;
+    uint32_t size = 0;
     switch(repr_type)
     {
     case Representation::THUMB:

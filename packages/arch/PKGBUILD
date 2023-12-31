@@ -1,0 +1,43 @@
+pkgname=nsgallery-git
+pkgver=0.1
+pkgrel=1
+pkgdesc="A naively simple web gallery"
+arch=('x86_64')
+url="https://github.com/MetroWind/nsgallery"
+license=('WTFPL')
+groups=()
+depends=('imagemagick' 'perl-image-exiftool' 'libheif' 'libwebp' 'spdlog')
+makedepends=('git' 'cmake')
+provides=("${pkgname%-git}")
+conflicts=("${pkgname%-git}")
+replaces=()
+backup=("etc/nsgallery.yaml")
+options=()
+install=
+source=('git+https://github.com/MetroWind/nsgallery.git')
+noextract=()
+md5sums=('SKIP')
+
+pkgver()
+{
+	cd "$srcdir/${pkgname%-git}"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+	cd "$srcdir/${pkgname%-git}"
+    # Spdlog won’t build with
+    cmake -B build \
+          -DCMAKE_BUILD_TYPE='Release' \
+          -DCMAKE_INSTALL_PREFIX='/usr' \
+          -Wno-dev .
+    cmake --build build
+}
+
+package() {
+	cd "$srcdir/${pkgname%-git}"
+	make DESTDIR="$pkgdir/" install
+    install -D -t "$pkgdir/var/lib/nsgallery" statics
+    install -D -t "$pkgdir/var/lib/nsgallery" templates
+    install -D -t "$pkgdir/etc" packages/arch/nsgallery.yaml
+}
