@@ -7,7 +7,6 @@
 
 #include "app.hpp"
 #include "config.hpp"
-#include "image.hpp"
 #include "image_source.hpp"
 
 nlohmann::json navChainToJson(std::vector<IDWithName>&& chain)
@@ -116,7 +115,11 @@ void App::handlePhoto(const std::string& id, httplib::Response& res)
     }
     nlohmann::json fe_data;
     fe_data["id"] = id;
-    fe_data["metadata"] = nlohmann::json::value_t::object;
+    auto metadata = image_source.getMetadata(id);
+    if(metadata.has_value())
+    {
+        fe_data["metadata"] = *std::move(metadata);
+    }
     fe_data["navigation"] = navChainToJson(image_source.navChain(id));
     std::string result = templates.render_file(
         "photo.html", std::move(fe_data));
@@ -202,7 +205,7 @@ void App::handleRepresentation(const std::string& path, httplib::Response& res)
 void App::start()
 {
     httplib::Server server;
-    // server.new_task_queue = [] { return new httplib::ThreadPool(1); };
+    spdlog::info("Mounting static dir at {}...", config.static_dir);
     auto ret = server.set_mount_point("/static", config.static_dir);
     if (!ret)
     {
@@ -219,7 +222,8 @@ void App::start()
                {
                    handleRepresentation(req.matches[1], res);
                });
-    server.Get("/a(/.*)?", [&](const httplib::Request& req, httplib::Response& res)
+    server.Get("/a(/.*)?", [&](const httplib::Request& req,
+                               httplib::Response& res)
     {
         const std::string& match = req.matches[1];
         if(match.starts_with("/"))
@@ -232,11 +236,13 @@ void App::start()
         }
     });
 
-    server.Get("/p/(.+)", [&](const httplib::Request& req, httplib::Response& res)
+    server.Get("/p/(.+)", [&](const httplib::Request& req,
+                              httplib::Response& res)
     {
         handlePhoto(req.matches[1], res);
     });
 
-    spdlog::info("Listening at http://localhost:8000/...");
-    server.listen("localhost", 8000);
+    spdlog::info("Listening at http://{}:{}/...", config.listen_address,
+                 config.listen_port);
+    server.listen(config.listen_address, config.listen_port);
 }

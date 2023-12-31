@@ -7,10 +7,13 @@
 #include <fstream>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <ryml.hpp>
 #include <ryml_std.hpp>
+
+constexpr std::string_view RUNTIME_DATA_DIR = ".nsgallery-data";
 
 template<class T>
 using E = std::expected<T, std::string>;

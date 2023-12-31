@@ -10,8 +10,10 @@
 #include <expected>
 #include <shared_mutex>
 
+#include <nlohmann/json.hpp>
+
 #include "config.hpp"
-#include "image.hpp"
+#include "metadata.hpp"
 #include "utils.hpp"
 #include "representation.hpp"
 
@@ -92,6 +94,7 @@ public:
 
     E<std::filesystem::path> getThumb(const std::string& id);
     E<std::filesystem::path> getPresent(const std::string& id);
+    E<nlohmann::json> getMetadata(const std::string& id);
 
     AlbumConfig::ItemStatus imageStatus(std::string_view id) const;
     AlbumConfig::ItemStatus albumStatus(std::string_view id) const;
@@ -117,4 +120,5 @@ private:
 
     ReprManager thumb_manager;
     ReprManager present_manager;
+    MetadataManager metadata_manager;
 };

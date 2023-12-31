@@ -68,6 +68,18 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
 
     ryml::Tree tree = ryml::parse_in_place(ryml::to_substr(*buffer));
     Configuration config;
+    if(tree["listen-address"].has_key())
+    {
+        auto value = tree["listen-address"].val();
+        config.listen_address = std::string(value.begin(), value.end());
+    }
+    if(tree["listen-port"].has_key())
+    {
+        if(!getYamlValue(tree["listen-port"], config.listen_port))
+        {
+            return std::unexpected("Invalid port");
+        }
+    }
     if(tree["photo-root-dir"].has_key())
     {
         auto value = tree["photo-root-dir"].val();
@@ -76,7 +88,17 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
     if(tree["template-dir"].has_key())
     {
         auto value = tree["template-dir"].val();
-        config.template_dir = std::string(value.begin(), value.end());
+        std::string path(value.begin(), value.end());
+        if(!path.ends_with(std::filesystem::path::preferred_separator))
+        {
+            path += std::filesystem::path::preferred_separator;
+        }
+        config.template_dir = std::move(path);
+    }
+    if(tree["static-dir"].has_key())
+    {
+        auto value = tree["static-dir"].val();
+        config.static_dir = std::string(value.begin(), value.end());
     }
     if(tree["thumb-size"].has_key())
     {

@@ -289,6 +289,28 @@ E<std::filesystem::path> ImageSource::getPresent(const std::string& id)
     }
 }
 
+E<nlohmann::json> ImageSource::getMetadata(const std::string& id)
+{
+    auto photo_path = image(id);
+    if(!photo_path.has_value())
+    {
+        return std::unexpected("Photo not found");
+    }
+    auto path = metadata_manager.get(*photo_path);
+    if(!path.has_value())
+    {
+        return std::unexpected(path.error());
+    }
+
+    nlohmann::json data = nlohmann::json::parse(std::ifstream(*path), nullptr,
+                                                false);
+    if(data.is_discarded())
+    {
+        return std::unexpected("Invalid JSON");
+    }
+    return data;
+}
+
 AlbumConfig::ItemStatus ImageSource::imageStatus(std::string_view id) const
 {
     fs::path path = dir / id;

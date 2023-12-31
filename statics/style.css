@@ -63,6 +63,7 @@ table {
     font-size: 18px;
     background: var(--color-bg);
     color: var(--color-fg);
+    line-height: 1.4;
 }
 
 @supports (font-variation-settings: normal)
@@ -92,6 +93,18 @@ a
 {
     color: var(--color-fg);
     text-decoration: none;
+}
+
+nav
+{
+    text-align: center;
+    margin: 32px 0 32px 0;
+}
+
+nav svg
+{
+    position: relative;
+    top: 0.1rem;
 }
 
 #AlbumContent
@@ -150,4 +163,33 @@ a:hover
     position: absolute;
     left: 0;
     right: 0;
+}
+
+#MetadataTable
+{
+    border-spacing: 0.3rem 0.7rem;
+    border-collapse: separate;
+    margin-top: 2rem;
+}
+
+@media screen and (min-width: 512px) {
+    #MetadataTable
+    {
+        float: right;
+    }
+}
+
+#MetadataTable tr
+{
+    min-height: 100px;
+}
+
+.Icon
+{
+    background-color: var(--color-fg);
+    mask-position: center right;
+    mask-size: 1.2rem 1.2rem;
+    mask-repeat: no-repeat;
+    min-width: 1.2rem;
+    min-height: 1.2rem;
 }

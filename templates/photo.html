@@ -6,12 +6,57 @@
   </head>
   <body>
     {% include "nav.html" %}
-    <h1>Photo</h1>
     <div id="PhotoContent">
       <figure>
         <img src="{{ url_for_repr(id, "present") }}" />
         <div id="Metadata">
-          <h2>A Photo</h2>
+          <table id="MetadataTable">
+            {% if existsIn(metadata, "Make") or existsIn(metadata, "Model") %}
+            <tr>
+              <td class="Icon" style="mask-image: url({{ url_for_static("icon-camera.svg") }});"></td>
+              <td>{% if existsIn(metadata, "Make") %}{{ metadata.Make }}{% endif %}
+                {% if existsIn(metadata, "Model") %}{{ metadata.Model }}{% endif %}</td>
+            </tr>
+            {% endif %}
+            {% if existsIn(metadata, "LensID") %}
+            <tr>
+              <td class="Icon" style="mask-image: url({{ url_for_static("icon-lens.svg") }});"></td>
+              <td>{{ metadata.LensID }}</td>
+            </tr>
+            {% endif %}
+            {% if existsIn(metadata, "FocalLength") %}
+            <tr>
+              <td class="Icon" style="mask-image: url({{ url_for_static("icon-focal.svg") }});"></td>
+              <td>{{ metadata.FocalLength }}</td>
+            </tr>
+            {% endif %}
+            {% if existsIn(metadata, "FNumber") %}
+            <tr>
+              <td class="Icon" style="mask-image: url({{ url_for_static("icon-aperture.svg") }});"></td>
+              <td>f/{{ metadata.FNumber }}</td>
+            </tr>
+            {% endif %}
+            {% if existsIn(metadata, "ExposureTime") %}
+            <tr>
+              <td class="Icon" style="mask-image: url({{ url_for_static("icon-exposure.svg") }});"></td>
+              <td>{{ metadata.ExposureTime }} s</td>
+            </tr>
+            {% endif %}
+            {% if existsIn(metadata, "ISO") %}
+            <tr>
+              <td class="Icon" style="mask-image: url({{ url_for_static("icon-iso.svg") }});"></td>
+              <td>{{ metadata.ISO }}</td>
+            </tr>
+            {% endif %}
+          </table>
+          {% if existsIn(metadata, "Title") %}
+          <h2>{{ metadata.Title }}</h2>
+          {% else if existsIn(metadata, "Headline") %}
+          <h2>{{ metadata.Headline }}</h2>
+          {% endif %}
+          {% if existsIn(metadata, "Caption-Abstract") %}
+          <p>{{ at(metadata, "Caption-Abstract") }}</p>
+          {% endif %}
         </div>
       </figure>
     </div>

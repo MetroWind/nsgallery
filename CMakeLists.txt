@@ -74,6 +74,8 @@ set(SOURCE_FILES
   src/image_source.hpp
   src/representation.cpp
   src/representation.hpp
+  src/metadata.hpp
+  src/metadata.cpp
   src/test.cpp
   src/utils.hpp
 )

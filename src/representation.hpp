@@ -7,6 +7,7 @@
 #include "config.hpp"
 #include "file_cache.hpp"
 #include "representation.hpp"
+#include "utils.hpp"
 
 class Representation
 {

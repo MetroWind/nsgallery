@@ -9,10 +9,9 @@
 #include <spdlog/spdlog.h>
 
 #include "representation.hpp"
+#include "utils.hpp"
 
 namespace fs = std::filesystem;
-
-constexpr std::string_view RUNTIME_DATA_DIR = ".nsgallery-data";
 
 E<void> imgResize(const std::string& source, const std::string& result,
                   int quality, uint32_t size)
