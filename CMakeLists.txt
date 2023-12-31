@@ -72,11 +72,11 @@ set(SOURCE_FILES
   src/file_cache.hpp
   src/image_source.cpp
   src/image_source.hpp
+  src/main.cpp
+  src/metadata.cpp
+  src/metadata.hpp
   src/representation.cpp
   src/representation.hpp
-  src/metadata.hpp
-  src/metadata.cpp
-  src/test.cpp
   src/utils.hpp
 )
 add_executable(gallery ${SOURCE_FILES})
