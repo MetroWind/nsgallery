@@ -6,7 +6,7 @@ arch=('x86_64')
 url="https://github.com/MetroWind/nsgallery"
 license=('WTFPL')
 groups=()
-depends=('imagemagick' 'perl-image-exiftool' 'libheif' 'libwebp' 'spdlog')
+depends=('imagemagick' 'perl-image-exiftool' 'libheif' 'libwebp')
 makedepends=('git' 'cmake')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
@@ -28,7 +28,7 @@ build() {
 	cd "$srcdir/${pkgname%-git}"
     # Spdlog won’t build with
     cmake -B build \
-          -DCMAKE_BUILD_TYPE='Release' \
+          -DCMAKE_BUILD_TYPE='None' \
           -DCMAKE_INSTALL_PREFIX='/usr' \
           -Wno-dev .
     cmake --build build

@@ -61,7 +61,6 @@ FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
   GIT_TAG v1.12.0
-  FIND_PACKAGE_ARGS CONFIG
 )
 FetchContent_MakeAvailable(spdlog)
 
@@ -96,7 +95,7 @@ target_include_directories(gallery PRIVATE
 target_link_libraries(gallery PRIVATE
   cxxopts
   httplib
-  spdlog
+  spdlog::spdlog
   ryml::ryml
   ${ImageMagick_LIBRARIES}
 )
