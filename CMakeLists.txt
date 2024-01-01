@@ -62,6 +62,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
   GIT_TAG v1.12.0
 )
+set(SPDLOG_USE_STD_FORMAT ON)
 FetchContent_MakeAvailable(spdlog)
 
 set(SOURCE_FILES
@@ -79,20 +80,20 @@ set(SOURCE_FILES
   src/representation.hpp
   src/utils.hpp
 )
-add_executable(gallery ${SOURCE_FILES})
-set_property(TARGET gallery PROPERTY CXX_EXTENSIONS FALSE)
-set_property(TARGET gallery PROPERTY CXX_STANDARD 23)
+add_executable(nsgallery ${SOURCE_FILES})
+set_property(TARGET nsgallery PROPERTY CXX_EXTENSIONS FALSE)
+set_property(TARGET nsgallery PROPERTY CXX_STANDARD 23)
 
-set_property(TARGET gallery PROPERTY COMPILE_WARNING_AS_ERROR TRUE)
-target_compile_options(gallery PRIVATE -Wall -Wextra -Wpedantic)
+set_property(TARGET nsgallery PROPERTY COMPILE_WARNING_AS_ERROR TRUE)
+target_compile_options(nsgallery PRIVATE -Wall -Wextra -Wpedantic)
 
-target_include_directories(gallery PRIVATE
+target_include_directories(nsgallery PRIVATE
   ${cxxopts_SOURCE_DIR}/include
   ${inja_SOURCE_DIR}/single_include/inja
   ${ImageMagick_INCLUDE_DIRS}
 )
 
-target_link_libraries(gallery PRIVATE
+target_link_libraries(nsgallery PRIVATE
   cxxopts
   httplib
   spdlog::spdlog

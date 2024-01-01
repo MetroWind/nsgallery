@@ -6,7 +6,7 @@ arch=('x86_64')
 url="https://github.com/MetroWind/nsgallery"
 license=('WTFPL')
 groups=()
-depends=('imagemagick' 'perl-image-exiftool' 'libheif' 'libwebp')
+depends=('imagemagick' 'perl-image-exiftool' 'libheif' 'libwebp' 'svt-av1')
 makedepends=('git' 'cmake')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
@@ -26,7 +26,6 @@ pkgver()
 
 build() {
 	cd "$srcdir/${pkgname%-git}"
-    # Spdlog won’t build with
     cmake -B build \
           -DCMAKE_BUILD_TYPE='None' \
           -DCMAKE_INSTALL_PREFIX='/usr' \
@@ -36,8 +35,8 @@ build() {
 
 package() {
 	cd "$srcdir/${pkgname%-git}"
-	make DESTDIR="$pkgdir/" install
-    install -D -t "$pkgdir/var/lib/nsgallery" statics
-    install -D -t "$pkgdir/var/lib/nsgallery" templates
+    install -Dm755 -t "$pkgdir/usr/bin" build/nsgallery
+    install -D -d statics "$pkgdir/var/lib/nsgallery"
+    install -D -d templates "$pkgdir/var/lib/nsgallery"
     install -D -t "$pkgdir/etc" packages/arch/nsgallery.yaml
 }

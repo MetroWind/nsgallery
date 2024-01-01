@@ -4,6 +4,7 @@
 #include <inja.hpp>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 #include "app.hpp"
 #include "config.hpp"
