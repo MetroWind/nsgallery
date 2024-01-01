@@ -6,6 +6,7 @@ After=network.target
 User=nsgallery
 Group=nsgallery
 ExecStart=/usr/bin/nsgallery
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
