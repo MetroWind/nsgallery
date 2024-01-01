@@ -4,7 +4,7 @@
     {% include "head.html" %}
     <meta property="og:title" content="Album: {{ name }}" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="{{ url_for_album(id) }}" />
+    <meta property="og:url" content="{{ url_prefix }}{{ url_for_album(id) }}" />
     <title>Gallery</title>
   </head>
   <body>

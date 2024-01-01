@@ -80,6 +80,11 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
             return std::unexpected("Invalid port");
         }
     }
+    if(tree["url-prefix"].has_key())
+    {
+        auto value = tree["url-prefix"].val();
+        config.url_prefix = std::string(value.begin(), value.end());
+    }
     if(tree["photo-root-dir"].has_key())
     {
         auto value = tree["photo-root-dir"].val();

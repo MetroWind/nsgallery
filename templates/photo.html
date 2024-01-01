@@ -13,8 +13,8 @@
     <meta property="og:description" content="{{ at(metadata, "Caption-Abstract") }}" />
     {% endif %}
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="{{ url_for_photo(id) }}" />
-    <meta property="og:image" content="{{ url_for_repr(id, "thumb") }}" />
+    <meta property="og:url" content="{{ url_prefix }}{{ url_for_photo(id) }}" />
+    <meta property="og:image" content="{{ url_prefix }}{{ url_for_repr(id, "thumb") }}" />
     <title>Photo</title>
   </head>
   <body>

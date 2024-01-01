@@ -23,6 +23,7 @@ class Configuration
 public:
     std::string listen_address = "localhost";
     uint16_t listen_port = 33565;
+    std::string url_prefix = "http://localhost:33565"; // Without trailing slash
     std::string photo_root_dir = ".";
     std::string template_dir = "./templates";
     std::string static_dir = ".";
