@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <exception>
 #include <filesystem>
+#include <chrono>
 #include <mutex>
 #include <string>
 #include <string_view>
@@ -112,7 +113,8 @@ const IDWithPath& ItemListCache::get(const std::string& key)
     {
         std::shared_lock<std::shared_mutex> l(lock);
         auto found = cache.find(key);
-        if(found != std::end(cache) && detectStale(key) == CacheStatus::FRESH)
+        if(found != std::end(cache) &&
+           detectStale(key, found->second) == CacheStatus::FRESH)
         {
             spdlog::debug("Cache hit on {}.", key);
             return found->second;
@@ -128,8 +130,8 @@ std::vector<std::reference_wrapper<const std::string>>
 orderedIDsFromIDWithPath(const IDWithPath& map)
 {
     std::vector<std::reference_wrapper<const std::string>> ids;
-    ids.reserve(map.size());
-    for(const auto& id_path: map)
+    ids.reserve(map.paths.size());
+    for(const auto& id_path: map.paths)
     {
         ids.emplace_back(id_path.first);
     }
@@ -145,8 +147,23 @@ ImageSource::ImageSource(const Configuration& conf)
           thumb_manager(Representation::THUMB, conf),
           present_manager(Representation::PRESENT, conf)
 {
-    auto stale = []([[maybe_unused]] const std::string& id)
+    auto stale = [&]([[maybe_unused]] const std::string& id,
+                     const IDWithPath& list)
     {
+        fs::path album_dir = dir / id;
+        fs::path config_file = album_dir / ALBUM_CONFIG_FILE;
+
+        if(fs::exists(config_file))
+        {
+            if(fs::last_write_time(config_file) > list.time)
+            {
+                return CacheStatus::STALE;
+            }
+        }
+        if(fs::last_write_time(album_dir) > list.time)
+        {
+            return CacheStatus::STALE;
+        }
         return CacheStatus::FRESH;
     };
 
@@ -154,6 +171,7 @@ ImageSource::ImageSource(const Configuration& conf)
     {
         IDWithPath paths;
         auto album_path = dir / album_id;
+        paths.time = std::chrono::file_clock::now();
         for(const fs::directory_entry& entry:
                 fs::directory_iterator(album_path))
         {
@@ -181,7 +199,7 @@ ImageSource::ImageSource(const Configuration& conf)
                 case AlbumConfig::SHOW:
                     break;
                 }
-                paths.emplace(id, std::move(path));
+                paths.paths.emplace(id, std::move(path));
                 spdlog::debug("{} contains {}.", album_id, std::move(id));
             }
         }
@@ -192,6 +210,7 @@ ImageSource::ImageSource(const Configuration& conf)
     {
         IDWithPath result;
         auto album_path = dir / album_id;
+        result.time = std::chrono::file_clock::now();
         for(const fs::directory_entry& entry:
                 fs::directory_iterator(album_path))
         {
@@ -215,7 +234,7 @@ ImageSource::ImageSource(const Configuration& conf)
                 break;
             }
 
-            result.emplace(std::move(id), std::move(path));
+            result.paths.emplace(std::move(id), std::move(path));
         }
         return result;
     });
@@ -255,8 +274,8 @@ std::optional<fs::path> ImageSource::image(const std::string& id)
     {
         return std::nullopt;
     }
-    auto found = imgs->get().find(id);
-    if(found == imgs->get().end())
+    auto found = imgs->get().paths.find(id);
+    if(found == imgs->get().paths.end())
     {
         return std::nullopt;
     }
@@ -424,11 +443,11 @@ ImageSource::albumCover(const std::string& album_id)
     }
 
     auto imgs = images(album_id);
-    if(!imgs.has_value() || imgs->get().empty())
+    const auto& map = imgs->get().paths;
+    if(!imgs.has_value() || map.empty())
     {
         return std::nullopt;
     }
 
-    return std::min_element(std::begin(imgs->get()), std::end(imgs->get()))
-        ->first;
+    return std::min_element(std::begin(map), std::end(map))->first;
 }

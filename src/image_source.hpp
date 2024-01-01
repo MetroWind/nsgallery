@@ -44,7 +44,12 @@ struct IDWithName
     std::string name;
 };
 
-using IDWithPath = std::unordered_map<std::string, std::filesystem::path>;
+struct IDWithPath
+{
+    std::unordered_map<std::string, std::filesystem::path> paths;
+    std::filesystem::file_time_type time;
+};
+
 using IDWithPathRef = std::reference_wrapper<const IDWithPath>;
 
 std::vector<std::reference_wrapper<const std::string>>
@@ -66,7 +71,8 @@ public:
     {
         refresh = func;
     }
-    void setDetectStale(std::function<CacheStatus(const std::string&)> func)
+    void setDetectStale(
+        std::function<CacheStatus(const std::string&, const IDWithPath&)> func)
     {
         detectStale = func;
     }
@@ -75,7 +81,8 @@ private:
     std::unordered_map<std::string, IDWithPath> cache;
     std::shared_mutex lock;
     std::function<IDWithPath(const std::string&)> refresh;
-    std::function<CacheStatus(const std::string&)> detectStale;
+    std::function<CacheStatus(const std::string&, const IDWithPath&)>
+    detectStale;
 };
 
 class ImageSource
