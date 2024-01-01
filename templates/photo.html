@@ -2,7 +2,20 @@
 <html lang="en">
   <head>
     {% include "head.html" %}
-    <title>Gallery</title>
+    {% if existsIn(metadata, "Title") %}
+    <meta property="og:title" content="Photo: {{ metadata.Title }}" />
+    {% else if existsIn(metadata, "Headline") %}
+    <meta property="og:title" content="Photo: {{ metadata.Headline }}" />
+    {% else %}
+    <meta property="og:title" content="Photo: {{ name }}" />
+    {% endif %}
+    {% if existsIn(metadata, "Caption-Abstract") %}
+    <meta property="og:description" content="{{ at(metadata, "Caption-Abstract") }}" />
+    {% endif %}
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ url_for_photo(id) }}" />
+    <meta property="og:image" content="{{ url_for_repr(id, "thumb") }}" />
+    <title>Photo</title>
   </head>
   <body>
     {% include "nav.html" %}

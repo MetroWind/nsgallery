@@ -62,6 +62,8 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
     nlohmann::json fe_data;
     fe_data["images"] = nlohmann::json::value_t::array;
     fe_data["albums"] = nlohmann::json::value_t::array;
+    fe_data["id"] = id;
+    fe_data["name"] = fs::path(id).filename().string();
     fe_data["thumb_size"] = config.thumb_size;
     const auto albums = image_source.albums(id);
     if(!albums.has_value())
@@ -118,6 +120,7 @@ void App::handlePhoto(const std::string& id, httplib::Response& res)
     }
     nlohmann::json fe_data;
     fe_data["id"] = id;
+    fe_data["name"] = fs::path(id).filename().string();
     auto metadata = image_source.getMetadata(id);
     if(metadata.has_value())
     {
