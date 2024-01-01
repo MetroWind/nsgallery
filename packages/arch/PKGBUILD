@@ -14,7 +14,7 @@ replaces=()
 backup=("etc/nsgallery.yaml")
 options=()
 install=
-source=('git+https://github.com/MetroWind/nsgallery.git')
+source=('git+https://github.com/MetroWind/nsgallery.git' "sysusers-nsgallery.conf" "nsgallery.service" "nsgallery.yaml")
 noextract=()
 md5sums=('SKIP')
 
@@ -40,5 +40,8 @@ package()
     install -Dm755 -t "$pkgdir/usr/bin" build/nsgallery
     mkdir -pv "$pkgdir/var/lib/nsgallery"
     cp -r statics templates "$pkgdir/var/lib/nsgallery"
-    install -Dm644 -t "$pkgdir/etc" packages/arch/nsgallery.yaml
+    install -Dm644 -t "$pkgdir/etc" nsgallery.yaml
+    install -Dm644 "sysusers-nsgallery.conf" "${pkgdir}/usr/lib/sysusers.d/nsgallery.conf"
+    install -Dm644 "nsgallery.service" "${pkgdir}/usr/lib/systemd/system/nsgallery.service"
+
 }

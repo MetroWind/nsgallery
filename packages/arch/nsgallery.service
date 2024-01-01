@@ -1,0 +1,11 @@
+[Unit]
+Description=NSGallery service
+After=network.target
+
+[Service]
+User=nsgallery
+Group=nsgallery
+ExecStart=/usr/bin/nsgallery
+
+[Install]
+WantedBy=multi-user.target
