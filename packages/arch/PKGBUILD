@@ -17,7 +17,7 @@ install=
 source=('git+https://github.com/MetroWind/nsgallery.git' "sysusers-nsgallery.conf" "nsgallery.service" "nsgallery.yaml")
 noextract=()
 sha256sums=('SKIP' "6d5bb86ad5a5beec9ab933f5c1ff60f42073d31ef0fe6fd722ebe4ed8c1d37b3"
-            "9c0577c9e4be92dbe0830cb8abd1152e3be1e8507a56a5ae85fae7167b8f3686"
+            "da699c3aee2f4e5db4af1f73dc52542fd80bebbe1c623098d3504383e993e93e"
             "c03a5b92d440944398a8f367054a26bb622fcc8b58e1b46b9d14e5155605ae2e")
 
 pkgver()
