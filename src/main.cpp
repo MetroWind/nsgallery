@@ -20,11 +20,7 @@ int main([[maybe_unused]] int argc, char** argv)
         return 0;
     }
 
-    std::string config_file;
-    if(opts.count("config"))
-    {
-        config_file = opts["config"].as<std::string>();
-    }
+    const std::string config_file = opts["config"].as<std::string>();
     const auto config = Configuration::fromYaml(config_file);
     if(!config.has_value())
     {
