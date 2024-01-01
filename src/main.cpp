@@ -29,6 +29,7 @@ int main([[maybe_unused]] int argc, char** argv)
     }
 
     Magick::InitializeMagick(*argv);
+    Magick::ResourceLimits::memory(1024);
     // spdlog::set_level(spdlog::level::debug);
 
     App app(*config);
