@@ -78,6 +78,7 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
         {
             fe_data["albums"].push_back(
                 {{"id", album},
+                 {"name", std::filesystem::path(album).filename().string()},
                  {"cover", *cover},
                  {"cover_type", "image"}});
         }
@@ -85,6 +86,7 @@ void App::handleAlbum(const std::string& id, httplib::Response& res)
         {
             fe_data["albums"].push_back(
                 {{"id", album},
+                 {"name", std::filesystem::path(album).filename().string()},
                  {"cover", "default-cover.svg"},
                  {"cover_type", "static"}});
         }

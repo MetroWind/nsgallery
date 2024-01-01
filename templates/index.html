@@ -21,7 +21,7 @@
               album cover" style="max-width: {{ thumb_size }}px;
               max-height: {{ thumb_size }}px;" />
               {%- endif -%}
-              <figcaption><a href="{{ url_for_album(a.id) }}">{{ a.id }}</a></figcaption>
+              <figcaption><a href="{{ url_for_album(a.id) }}">{{ a.name }}</a></figcaption>
             </figure>
           </li>
           {% endfor %}
