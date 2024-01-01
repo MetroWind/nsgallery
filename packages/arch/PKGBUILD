@@ -24,7 +24,8 @@ pkgver()
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
 }
 
-build() {
+build()
+{
 	cd "$srcdir/${pkgname%-git}"
     cmake -B build \
           -DCMAKE_BUILD_TYPE='None' \
@@ -33,10 +34,11 @@ build() {
     cmake --build build
 }
 
-package() {
+package()
+{
 	cd "$srcdir/${pkgname%-git}"
     install -Dm755 -t "$pkgdir/usr/bin" build/nsgallery
-    install -D -d statics "$pkgdir/var/lib/nsgallery"
-    install -D -d templates "$pkgdir/var/lib/nsgallery"
-    install -D -t "$pkgdir/etc" packages/arch/nsgallery.yaml
+    mkdir -pv "$pkgdir/var/lib/nsgallery"
+    cp -r statics templates "$pkgdir/var/lib/nsgallery"
+    install -Dm644 -t "$pkgdir/etc" packages/arch/nsgallery.yaml
 }
