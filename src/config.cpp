@@ -153,6 +153,14 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
         auto value = tree["exiftool-path"].val();
         config.exiftool_path = std::string(value.begin(), value.end());
     }
+    if(tree["imagemagick-mem-limit-mib"].has_key())
+    {
+        if(!getYamlValue(tree["imagemagick-mem-limit-mib"],
+                         config.imagemagick_mem_limit_mib))
+        {
+            return std::unexpected("Invalid magick mem limit");
+        }
+    }
     return std::expected<Configuration, std::string>
         {std::in_place, std::move(config)};
 }

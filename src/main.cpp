@@ -29,7 +29,10 @@ int main([[maybe_unused]] int argc, char** argv)
     }
 
     Magick::InitializeMagick(*argv);
-    Magick::ResourceLimits::memory(1024);
+    if(config->imagemagick_mem_limit_mib > 0)
+    {
+        Magick::ResourceLimits::memory(config->imagemagick_mem_limit_mib);
+    }
     // spdlog::set_level(spdlog::level::debug);
 
     App app(*config);

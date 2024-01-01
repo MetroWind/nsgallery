@@ -33,6 +33,7 @@ public:
     int present_quality = 85;
     ImageFormat::Value present_format = ImageFormat::AVIF;
     std::string exiftool_path = "exiftool";
+    uint64_t imagemagick_mem_limit_mib = 0; // Zero means unlimited.
 
     static E<Configuration> fromYaml(const std::filesystem::path& path);
 };
