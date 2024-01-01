@@ -13,6 +13,7 @@
 
 #include "config.hpp"
 #include "image_source.hpp"
+#include "metadata.hpp"
 #include "utils.hpp"
 
 namespace fs = std::filesystem;
@@ -145,7 +146,8 @@ orderedIDsFromIDWithPath(const IDWithPath& map)
 ImageSource::ImageSource(const Configuration& conf)
         : config(conf), dir(conf.photo_root_dir),
           thumb_manager(Representation::THUMB, conf),
-          present_manager(Representation::PRESENT, conf)
+          present_manager(Representation::PRESENT, conf),
+          metadata_manager(conf)
 {
     auto stale = [&]([[maybe_unused]] const std::string& id,
                      const IDWithPath& list)

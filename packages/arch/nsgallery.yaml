@@ -1,3 +1,4 @@
 photo-root-dir: "/tmp"
 template-dir: "/var/lib/nsgallery/templates"
 static-dir: "/var/lib/nsgallery/statics"
+exiftool-path: "/usr/bin/vendor_perl/exiftool"

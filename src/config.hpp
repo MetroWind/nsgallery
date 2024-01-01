@@ -32,6 +32,7 @@ public:
     uint32_t present_size = 1280;
     int present_quality = 85;
     ImageFormat::Value present_format = ImageFormat::AVIF;
+    std::string exiftool_path = "exiftool";
 
     static E<Configuration> fromYaml(const std::filesystem::path& path);
 };

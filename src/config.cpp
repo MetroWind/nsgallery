@@ -148,6 +148,11 @@ E<Configuration> Configuration::fromYaml(const std::filesystem::path& path)
             config.present_format = *f;
         }
     }
+    if(tree["exiftool-path"].has_key())
+    {
+        auto value = tree["exiftool-path"].val();
+        config.exiftool_path = std::string(value.begin(), value.end());
+    }
     return std::expected<Configuration, std::string>
         {std::in_place, std::move(config)};
 }

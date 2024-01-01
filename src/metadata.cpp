@@ -60,6 +60,11 @@ void transferValue(nlohmann::json& src, nlohmann::json& dest, const char* field,
     }
 }
 
+MetadataManager::MetadataManager(const Configuration& conf)
+        : config(conf)
+{
+}
+
 fs::path MetadataManager::getPath(const fs::path& path)
 {
     std::string basename = path.stem().string();
@@ -74,9 +79,9 @@ bool MetadataManager::isFresh(const fs::path& path)
 E<void> MetadataManager::refresh(const fs::path& path)
 {
     std::string cmd = std::format(
-        "exiftool -json -Make -Model -FNumber -ExposureTime -ISO -LensID "
+        "\"{}\" -json -Make -Model -FNumber -ExposureTime -ISO -LensID "
         "-FocalLength -Headline -Title -Caption-Abstract \"{}\"",
-        path.string());
+        config.exiftool_path, path.string());
     auto output = runOutput(cmd.c_str());
     if(!output.has_value())
     {
