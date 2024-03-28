@@ -34,7 +34,7 @@ directory of photos you want to expose.
 
 == Access Control
 
-You can control when photo/sub-directory to expose/hide by createing a
+You can control which photo/sub-directory to expose/hide by creating a
 `.nsgallery-config.yaml` in a directory where you need to control
 access of. It has two modes of operation. You can put a `excludes` key
 in it, and let it act as a blacklist. For example,
@@ -64,7 +64,7 @@ You can also put an `includes` key instead of `excludes` in the YAML
 file, which will act as a whitelist. Only the listed
 photos/directories will be listed and accessible.
 
-If there is no `.nsgallery-config.yaml` or there is not `includes` nor
+If there is no `.nsgallery-config.yaml` or there is no `includes` nor
 `excludes`, it means everything is accessible.
 
 You can also put a `hides` key in the file. This will allow access to
