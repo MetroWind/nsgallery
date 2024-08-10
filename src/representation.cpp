@@ -27,9 +27,11 @@ E<void> imgResize(const std::string& source, const std::string& result,
     {
         return std::unexpected(std::format("Failed to open image {}.", source));
     }
+    auto profile = img.iccColorProfile();
     img.strip();
     img.resize(std::format("{}x{}>", size, size));
     img.quality(quality);
+    img.iccColorProfile(profile);
     img.write(result);
 
     return {};
