@@ -31,7 +31,7 @@ build()
 {
 	cd "$srcdir/${pkgname%-git}"
     cmake -B build \
-          -DCMAKE_BUILD_TYPE='None' \
+          -DCMAKE_BUILD_TYPE='RelWithDebInfo' \
           -DCMAKE_INSTALL_PREFIX='/usr' \
           -Wno-dev .
     cmake --build build
