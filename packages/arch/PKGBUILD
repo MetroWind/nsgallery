@@ -12,7 +12,8 @@ provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
 replaces=()
 backup=("etc/nsgallery.yaml")
-options=()
+# Stripping doesn’t work well with ryml.
+options=(debug !strip)
 install=
 source=('git+https://github.com/MetroWind/nsgallery.git' "sysusers-nsgallery.conf" "nsgallery.service" "nsgallery.yaml")
 noextract=()
