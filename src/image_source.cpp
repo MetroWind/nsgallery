@@ -397,17 +397,7 @@ bool ImageSource::shouldExcludeImageFromParent(std::string_view id) const
     {
         return false;
     }
-    AlbumConfig parent_conf = AlbumConfig::fromYamlOrDefault(
-        dir / parent_id / ALBUM_CONFIG_FILE);
-    if(parent_conf.getItemStatus(parent_id.filename().string()) ==
-       AlbumConfig::EXCLUDE)
-    {
-        return true;
-    }
-    else
-    {
-        return shouldExcludeAlbumFromParent(parent_id.string());
-    }
+    return shouldExcludeAlbumFromParent(parent_id.string());
 }
 
 bool ImageSource::shouldExcludeAlbumFromParent(std::string_view id) const
