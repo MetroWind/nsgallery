@@ -75,7 +75,7 @@ std::string AlbumConfig::statusToStr(ItemStatus s)
 }
 
 AlbumConfig::ItemStatus
-AlbumConfig::getItmeStatus(const std::string& file_base_name)
+AlbumConfig::getItemStatus(const std::string& file_base_name)
 {
     if(excludes.empty())
     {
@@ -338,7 +338,7 @@ AlbumConfig::ItemStatus ImageSource::imageStatus(std::string_view id) const
     AlbumConfig conf = AlbumConfig::fromYamlOrDefault(
         path.parent_path() / ALBUM_CONFIG_FILE);
     AlbumConfig::ItemStatus status =
-        conf.getItmeStatus(path.filename().string());
+        conf.getItemStatus(path.filename().string());
     if(status == AlbumConfig::EXCLUDE)
     {
         return status;
@@ -363,7 +363,7 @@ AlbumConfig::ItemStatus ImageSource::albumStatus(std::string_view id) const
     AlbumConfig conf = AlbumConfig::fromYamlOrDefault(
         path.parent_path() / ALBUM_CONFIG_FILE);
     AlbumConfig::ItemStatus status =
-        conf.getItmeStatus(path.filename().string());
+        conf.getItemStatus(path.filename().string());
     if(status == AlbumConfig::EXCLUDE)
     {
         return status;
@@ -399,7 +399,7 @@ bool ImageSource::shouldExcludeImageFromParent(std::string_view id) const
     }
     AlbumConfig parent_conf = AlbumConfig::fromYamlOrDefault(
         dir / parent_id / ALBUM_CONFIG_FILE);
-    if(parent_conf.getItmeStatus(parent_id.filename().string()) ==
+    if(parent_conf.getItemStatus(parent_id.filename().string()) ==
        AlbumConfig::EXCLUDE)
     {
         return true;
@@ -423,7 +423,7 @@ bool ImageSource::shouldExcludeAlbumFromParent(std::string_view id) const
     }
     AlbumConfig parent_conf = AlbumConfig::fromYamlOrDefault(
         dir / parent_id.parent_path() / ALBUM_CONFIG_FILE);
-    if(parent_conf.getItmeStatus(parent_id.filename().string()) ==
+    if(parent_conf.getItemStatus(parent_id.filename().string()) ==
        AlbumConfig::EXCLUDE)
     {
         return true;

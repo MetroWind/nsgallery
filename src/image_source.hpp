@@ -26,7 +26,7 @@ public:
 
     static AlbumConfig fromYamlOrDefault(const std::filesystem::path& file);
     static std::string statusToStr(ItemStatus);
-    ItemStatus getItmeStatus(const std::string& file_base_name);
+    ItemStatus getItemStatus(const std::string& file_base_name);
     std::optional<std::string> getCover() const { return cover; }
 
 private:
