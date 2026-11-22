@@ -233,15 +233,16 @@ void App::start()
     server.Get("/a(/.*)?", [&](const httplib::Request& req,
                                httplib::Response& res)
     {
-        const std::string& match = req.matches[1];
-        if(match.starts_with("/"))
+        std::string id = req.matches[1];
+        if(id.starts_with("/"))
         {
-            handleAlbum(match.substr(1), res);
+            id.erase(0, 1);
         }
-        else
+        while(id.ends_with("/"))
         {
-            handleAlbum(match, res);
+            id.pop_back();
         }
+        handleAlbum(id, res);
     });
 
     server.Get("/p/(.+)", [&](const httplib::Request& req,
